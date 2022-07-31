@@ -1,12 +1,12 @@
 {
   "name": "typeorm-transactional",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "A Transactional Method Decorator for typeorm that uses cls-hooked to handle and propagate transactions between different repositories and service methods. Inpired by Spring Trasnactional Annotation and Sequelize CLS",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/odavid/typeorm-transactional-cls-hooked"
+    "url": "https://github.com/Aliheym/typeorm-transactional"
   },
   "author": {
     "name": "Ohad David",
@@ -39,12 +39,7 @@
   },
   "dependencies": {
     "@types/cls-hooked": "^4.3.3",
-    "@typescript-eslint/eslint-plugin": "^5.31.0",
-    "@typescript-eslint/parser": "^5.31.0",
-    "cls-hooked": "^4.2.2",
-    "eslint": "^8.20.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-prettier": "^4.2.1"
+    "cls-hooked": "^4.2.2"
   },
   "devDependencies": {
     "@types/jest": "^28.1.6",
@@ -53,7 +48,12 @@
     "reflect-metadata": "^0.1.13",
     "ts-jest": "^28.0.7",
     "typeorm": "^0.3.7",
-    "typescript": "^4.7.4"
+    "typescript": "^4.7.4",
+    "eslint": "^8.20.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "@typescript-eslint/eslint-plugin": "^5.31.0",
+    "@typescript-eslint/parser": "^5.31.0"
   },
   "peerDependencies": {
     "reflect-metadata": ">= 0.1.12",
