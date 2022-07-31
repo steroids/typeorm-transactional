@@ -1,18 +1,22 @@
 import { EntityManager } from 'typeorm';
 import {
-  getDataSourceByToken,
-  getEntityManagerByToken,
+  DataSourceName,
+  getDataSourceByName,
+  getEntityManagerByDataSourceName,
   getTransactionalContext,
-  setEntityManagerByToken,
+  setEntityManagerByDataSourceName,
 } from '../common';
 
-import { IsolationLevel } from '../common/isolation-level';
-import { Propagation } from '../common/propagation';
+import { IsolationLevel } from '../enums/isolation-level';
+import { Propagation } from '../enums/propagation';
 import { runInNewHookContext } from '../hooks';
 import { TransactionalError } from '../errors/transactional';
 
 export interface WrapInTransactionOptions {
-  connectionName?: string;
+  /**
+   * For compability with `typeorm-transactional-cls-hooked` we use `connectionName`
+   */
+  connectionName?: DataSourceName;
 
   propagation?: Propagation;
 
@@ -33,7 +37,7 @@ export const wrapInTransaction = (fn: () => unknown, options?: WrapInTransaction
 
     const connectionName = options?.connectionName ?? 'default';
 
-    const dataSource = getDataSourceByToken(connectionName);
+    const dataSource = getDataSourceByName(connectionName);
     if (!dataSource) {
       throw new Error(
         'No data sources defined in your app ... please call addTransactionalDataSources() before application start.',
@@ -48,14 +52,14 @@ export const wrapInTransaction = (fn: () => unknown, options?: WrapInTransaction
 
     const runWithNewTransaction = () => {
       const transactionCallback = async (entityManager: EntityManager) => {
-        setEntityManagerByToken(context, connectionName, entityManager);
+        setEntityManagerByDataSourceName(context, connectionName, entityManager);
 
         try {
           const result = await runOriginal();
 
           return result;
         } finally {
-          setEntityManagerByToken(context, connectionName, null);
+          setEntityManagerByDataSourceName(context, connectionName, null);
         }
       };
 
@@ -71,8 +75,7 @@ export const wrapInTransaction = (fn: () => unknown, options?: WrapInTransaction
     };
 
     return context.runAndReturn(async () => {
-      const currentTransaction = getEntityManagerByToken(context, connectionName);
-
+      const currentTransaction = getEntityManagerByDataSourceName(context, connectionName);
       switch (propagation) {
         case Propagation.MANDATORY:
           if (!currentTransaction) {
@@ -97,9 +100,9 @@ export const wrapInTransaction = (fn: () => unknown, options?: WrapInTransaction
 
         case Propagation.NOT_SUPPORTED:
           if (currentTransaction) {
-            setEntityManagerByToken(context, connectionName, null);
+            setEntityManagerByDataSourceName(context, connectionName, null);
             const result = await runWithNewHook();
-            setEntityManagerByToken(context, connectionName, currentTransaction);
+            setEntityManagerByDataSourceName(context, connectionName, currentTransaction);
 
             return result;
           }

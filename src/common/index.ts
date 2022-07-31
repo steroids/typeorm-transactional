@@ -2,17 +2,17 @@ import { createNamespace, getNamespace, Namespace } from 'cls-hooked';
 import { DataSource, EntityManager } from 'typeorm';
 import {
   NAMESPACE_NAME,
-  TYPEORM_DATA_SOURCE_NAM,
-  TYPEORM_DATA_TOKEN_PREFIX,
+  TYPEORM_DATA_SOURCE_NAME,
+  TYPEORM_DATA_SOURCE_NAME_PREFIX,
   TYPEORM_ENTITY_MANAGER_NAME,
   TYPEORM_HOOK_NAME,
 } from './constants';
 import { EventEmitter } from 'events';
 
-type Token = string | 'default';
+export type DataSourceName = string | 'default';
 
 interface AddTransactionalDataSourceInput {
-  token: string;
+  name: string;
   dataSource: DataSource;
 }
 
@@ -21,31 +21,34 @@ interface AddTransactionalDataSourceInput {
  *
  * The property "name" in the `DataSource` is deprecated, so we add own names to distinguish data sources.
  */
-const dataSources = new Map<Token, DataSource>();
+const dataSources = new Map<DataSourceName, DataSource>();
 
 export const getTransactionalContext = () => getNamespace(NAMESPACE_NAME);
 
-export const getEntityManagerByToken = (context: Namespace, token: Token) => {
-  if (!dataSources.has(token)) return null;
+export const getEntityManagerByDataSourceName = (context: Namespace, name: DataSourceName) => {
+  if (!dataSources.has(name)) return null;
 
-  return (context.get(TYPEORM_DATA_TOKEN_PREFIX + token) as EntityManager) || null;
+  return (context.get(TYPEORM_DATA_SOURCE_NAME_PREFIX + name) as EntityManager) || null;
 };
 
-export const setEntityManagerByToken = (
+export const setEntityManagerByDataSourceName = (
   context: Namespace,
-  token: Token,
+  name: DataSourceName,
   entityManager: EntityManager | null,
 ) => {
-  if (!dataSources.has(token)) return;
+  if (!dataSources.has(name)) return;
 
-  context.set(TYPEORM_DATA_TOKEN_PREFIX + token, entityManager);
+  context.set(TYPEORM_DATA_SOURCE_NAME_PREFIX + name, entityManager);
 };
 
-const getEntityManagerInContext = (token: Token, entityManager: EntityManager) => {
+const getEntityManagerInContext = (
+  dataSourceName: DataSourceName,
+  entityManager: EntityManager,
+) => {
   const context = getTransactionalContext();
   if (!context || !context.active) return entityManager;
 
-  return getEntityManagerByToken(context, token) || entityManager;
+  return getEntityManagerByDataSourceName(context, dataSourceName) || entityManager;
 };
 
 export const initializeTransactionalContext = () => {
@@ -66,7 +69,9 @@ export const initializeTransactionalContext = () => {
       Object.defineProperty(repository, 'manager', {
         get() {
           return getEntityManagerInContext(
-            this[TYPEORM_ENTITY_MANAGER_NAME].connection[TYPEORM_DATA_SOURCE_NAM] as Token,
+            this[TYPEORM_ENTITY_MANAGER_NAME].connection[
+              TYPEORM_DATA_SOURCE_NAME
+            ] as DataSourceName,
             this[TYPEORM_ENTITY_MANAGER_NAME] as EntityManager,
           );
         },
@@ -82,26 +87,25 @@ export const initializeTransactionalContext = () => {
   return createNamespace(NAMESPACE_NAME) || getNamespace(NAMESPACE_NAME);
 };
 
-export const addTransactionalDataSources = (
-  input: DataSource | AddTransactionalDataSourceInput[],
-) => {
+export const addTransactionalDataSource = (input: DataSource | AddTransactionalDataSourceInput) => {
   if (input instanceof DataSource) {
-    input = [{ token: 'default', dataSource: input }];
+    input = { name: 'default', dataSource: input };
   }
 
-  for (const { token, dataSource } of input) {
-    if (dataSources.has(token)) {
-      throw new Error(`Token "${token}" has already added`);
-    }
-
-    dataSources.set(token, dataSource);
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    dataSource[TYPEORM_DATA_SOURCE_NAM] = token;
+  const { name, dataSource } = input;
+  if (dataSources.has(name)) {
+    throw new Error(`DataSource with name "${name}" has already added.`);
   }
+
+  dataSources.set(name, dataSource);
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  dataSource[TYPEORM_DATA_SOURCE_NAME] = name;
+
+  return input.dataSource;
 };
 
-export const getDataSourceByToken = (token: Token) => dataSources.get(token);
+export const getDataSourceByName = (name: DataSourceName) => dataSources.get(name);
 
 export const getHookInContext = (context: Namespace | undefined) =>
   context?.get(TYPEORM_HOOK_NAME) as EventEmitter | null;

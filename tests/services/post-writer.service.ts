@@ -1,6 +1,6 @@
 import { Repository } from 'typeorm';
 import { runOnTransactionCommit, runOnTransactionRollback, Transactional } from '../../src';
-import { Post } from '../entities/Post';
+import { Post } from '../entities/Post.entity';
 
 export class PostWriterService {
   public success: boolean;

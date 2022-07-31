@@ -1,45 +1,14 @@
 import { DataSource } from 'typeorm';
-import { Post } from './entities/Post';
+import { Post } from './entities/Post.entity';
 import {
-  addTransactionalDataSources,
+  addTransactionalDataSource,
   initializeTransactionalContext,
   runInTransaction,
   runOnTransactionCommit,
-  runOnTransactionRollback,
+  Propagation,
 } from '../src';
 import { PostReaderService } from './services/post-reader.service';
 import { PostWriterService } from './services/post-writer.service';
-import { Propagation } from '../src/common/propagation';
-
-let dataSource: DataSource;
-
-beforeAll(async () => {
-  dataSource = new DataSource({
-    type: 'postgres',
-    host: 'localhost',
-    port: 5435,
-    username: 'postgres',
-    password: 'postgres',
-    database: 'test',
-    entities: [Post],
-    synchronize: true,
-  });
-
-  initializeTransactionalContext();
-  addTransactionalDataSources([{ token: 'default', dataSource }]);
-
-  await dataSource.initialize();
-
-  dataSource.query('TRUNCATE TABLE posts;');
-});
-
-afterAll(async () => {
-  await dataSource.destroy();
-});
-
-afterEach(async () => {
-  await dataSource.query('TRUNCATE TABLE posts;');
-});
 
 async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -47,8 +16,38 @@ async function sleep(ms: number) {
 
 const message = 'a simple message';
 
-describe('Simple tests', () => {
-  it("shouldn't get post using raw typeorm", async () => {
+describe('Common tests', () => {
+  let dataSource: DataSource;
+
+  beforeAll(async () => {
+    dataSource = new DataSource({
+      type: 'postgres',
+      host: 'localhost',
+      port: 5435,
+      username: 'postgres',
+      password: 'postgres',
+      database: 'test',
+      entities: [Post],
+      synchronize: true,
+    });
+
+    initializeTransactionalContext();
+    addTransactionalDataSource(dataSource);
+
+    await dataSource.initialize();
+
+    await dataSource.createEntityManager().clear(Post);
+  });
+
+  afterEach(async () => {
+    await dataSource.createEntityManager().clear(Post);
+  });
+
+  afterAll(async () => {
+    await dataSource.destroy();
+  });
+
+  it("shouldn't get post using standard typeorm transaction", async () => {
     const [writtenPost, readPost] = await dataSource.transaction(async (manager) => {
       const writerService = new PostWriterService(manager.getRepository(Post));
       const readerService = new PostReaderService(dataSource.getRepository(Post));
@@ -87,7 +86,7 @@ describe('Simple tests', () => {
     expect(commitHookCalled).toBeTruthy();
   });
 
-  it('should get post using Transactional decorator', async () => {
+  it('should get post using @Transactional decorator', async () => {
     const repository = dataSource.getRepository(Post);
 
     const writerService = new PostWriterService(repository);
@@ -96,11 +95,11 @@ describe('Simple tests', () => {
     const writtenPost = await writerService.createPostWithDecorator(message);
     const readPost = await readerService.getPostByMessage(message);
 
-    setImmediate(() => {
-      expect(writtenPost.id).toBeGreaterThan(0);
-      expect(readPost.id).toBe(writtenPost.id);
-      expect(writerService.success).toBe(true);
-    });
+    await sleep(100);
+
+    expect(writtenPost.id).toBeGreaterThan(0);
+    expect(readPost.id).toBe(writtenPost.id);
+    expect(writerService.success).toBe(true);
   });
 
   it('should fail create post using runInTransaction', async () => {
@@ -132,13 +131,11 @@ describe('Simple tests', () => {
 
     await sleep(100);
 
-    setImmediate(() => {
-      expect(readPost).toBeNull();
-      expect(writerService.success).toBe(false);
-    });
+    expect(readPost).toBeNull();
+    expect(writerService.success).toBe(false);
   });
 
-  it('should fail for mandatory propagation without existing transaction', async () => {
+  it('should fail for "MANDATORY" propagation without existing transaction', async () => {
     const repository = dataSource.getRepository(Post);
 
     const writerService = new PostWriterService(repository);
@@ -160,7 +157,7 @@ describe('Simple tests', () => {
     expect(fn).rejects.toThrowError();
   });
 
-  it('should pass transaction for mandatory propagation', async () => {
+  it('should pass transaction for "MANDATORY" propagation', async () => {
     const repository = dataSource.getRepository(Post);
 
     const writerService = new PostWriterService(repository);
@@ -179,7 +176,7 @@ describe('Simple tests', () => {
     expect(readPost.id).toBe(writtenPost.id);
   });
 
-  it('should fail for never propagation if transaction exists', async () => {
+  it('should fail for "NEVER" propagation if transaction exists', async () => {
     const repository = dataSource.getRepository(Post);
 
     const writerService = new PostWriterService(repository);
@@ -198,7 +195,7 @@ describe('Simple tests', () => {
     expect(fn).rejects.toThrowError();
   });
 
-  it('should ignore transactions for not-supported propagation', async () => {
+  it('should ignore transactions for "NOT_SUPPORTED" propagation', async () => {
     const repository = dataSource.getRepository(Post);
 
     const writerService = new PostWriterService(repository);
@@ -217,7 +214,7 @@ describe('Simple tests', () => {
     expect(readPost).toBeNull();
   });
 
-  it('should suspend old transactions for "requires new" propagation', async () => {
+  it('should suspend old transactions for "REQUIRES_NEW" propagation', async () => {
     const repository = dataSource.getRepository(Post);
 
     const writerService = new PostWriterService(repository);
@@ -234,34 +231,5 @@ describe('Simple tests', () => {
 
     expect(writtenPost.id).toBeGreaterThan(0);
     expect(readPost).toBeNull();
-  });
-
-  it('should create new transaction for "requires new" propagation', async () => {
-    const repository = dataSource.getRepository(Post);
-
-    const writerService = new PostWriterService(repository);
-    const readerService = new PostReaderService(repository);
-
-    const promise = runInTransaction(async () => {
-      const a = writerService.createPost('1');
-      const b = writerService.createPost('2');
-
-      const c = new Promise((r) => setTimeout(() => r(new Error()), 200));
-
-      runOnTransactionRollback(() => console.log('rollback'));
-
-      await Promise.all([a, b, c]);
-    });
-
-    // expect(promise).rejects.toThrow();
-
-    promise.then(async () => {
-      console.log('count', await repository.count());
-    });
-
-    await sleep(300);
-
-    // expect(hooksOrder[0]).toBe('inner');
-    // expect(hooksOrder[1]).toBe('outer');
   });
 });
