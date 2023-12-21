@@ -7,12 +7,15 @@ import { UserReaderService } from './services/user-reader.service';
 import { UserWriterService } from './services/user-writer.service';
 
 import { initializeTransactionalContext, addTransactionalDataSource, StorageDriver } from '../src';
+import { TaskService } from './services/task.service';
+import { Task } from './entities/Task.entity';
 
 describe('Integration with Nest.js', () => {
   let app: TestingModule;
 
   let readerService: UserReaderService;
   let writerService: UserWriterService;
+  let taskService: TaskService;
 
   let dataSource: DataSource;
 
@@ -35,7 +38,7 @@ describe('Integration with Nest.js', () => {
               username: 'postgres',
               password: 'postgres',
               database: 'test',
-              entities: [User],
+              entities: [User, Task],
               synchronize: true,
               logging: false,
             };
@@ -49,22 +52,25 @@ describe('Integration with Nest.js', () => {
           },
         }),
 
-        TypeOrmModule.forFeature([User]),
+        TypeOrmModule.forFeature([User, Task]),
       ],
-      providers: [UserReaderService, UserWriterService],
+      providers: [UserReaderService, UserWriterService, TaskService],
       exports: [],
     }).compile();
 
     readerService = app.get<UserReaderService>(UserReaderService);
     writerService = app.get<UserWriterService>(UserWriterService);
+    taskService = app.get<TaskService>(TaskService);
 
     dataSource = app.get(DataSource);
 
     await dataSource.createEntityManager().clear(User);
+    await dataSource.createEntityManager().clear(Task);
   });
 
   afterEach(async () => {
     await dataSource.createEntityManager().clear(User);
+    await dataSource.createEntityManager().clear(Task);
   });
 
   afterAll(async () => {
@@ -89,7 +95,7 @@ describe('Integration with Nest.js', () => {
     const name = 'John Doe';
     const onTransactionCompleteSpy = jest.fn();
 
-    expect(() =>
+    await expect(() =>
       writerService.createUserAndThrow(name, onTransactionCompleteSpy),
     ).rejects.toThrowError();
 
@@ -98,5 +104,19 @@ describe('Integration with Nest.js', () => {
 
     expect(onTransactionCompleteSpy).toBeCalledTimes(1);
     expect(onTransactionCompleteSpy).toBeCalledWith(false);
+  });
+
+  it('should rollback transaction if error was thrown', async () => {
+    const id = '99407c4f-fa64-432b-874e-1f842609983f';
+
+    await expect(() =>
+      taskService.upsertTask({
+        id,
+        name: 'Some task',
+      }),
+    ).rejects.toThrowError();
+
+    const task = await taskService.findTaskById(id);
+    expect(task).toBeNull();
   });
 });
