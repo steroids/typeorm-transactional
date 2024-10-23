@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@steroidsjs/nest-typeorm';
-import { Repository } from 'typeorm';
+import { Repository } from '@steroidsjs/typeorm';
 
 import { UserReaderService } from './user-reader.service';
 

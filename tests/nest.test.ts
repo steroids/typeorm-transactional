@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@steroidsjs/nest-typeorm';
-import { DataSource } from 'typeorm';
+import { DataSource } from '@steroidsjs/typeorm';
 
 import { User } from './entities/User.entity';
 import { UserReaderService } from './services/user-reader.service';

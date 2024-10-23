@@ -1,4 +1,4 @@
-import { DataSource } from 'typeorm';
+import { DataSource } from '@steroidsjs/typeorm';
 import {
   addTransactionalDataSource,
   initializeTransactionalContext,

@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, PrimaryColumn } from '@steroidsjs/typeorm';
 
 @Entity('users')
 export class User {

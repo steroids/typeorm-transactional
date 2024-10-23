@@ -1,4 +1,4 @@
-import { QueryBuilder } from 'typeorm';
+import { QueryBuilder } from '@steroidsjs/typeorm';
 
 import { Counter } from './entities/Counter.entity';
 

@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { Repository } from '@steroidsjs/typeorm';
 
 import { User } from '../entities/User.entity';
 

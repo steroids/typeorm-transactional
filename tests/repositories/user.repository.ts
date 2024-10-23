@@ -1,4 +1,4 @@
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Repository } from '@steroidsjs/typeorm';
 
 import { User } from '../entities/User.entity';
 

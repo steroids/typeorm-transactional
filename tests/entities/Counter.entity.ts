@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn } from '@steroidsjs/typeorm';
 
 @Entity('counters')
 export class Counter {
