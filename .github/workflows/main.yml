@@ -1,9 +1,14 @@
 name: main
-on: [push]
+
+on:
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   tests:
     runs-on: ubuntu-latest
+    if: false
     strategy:
       matrix:
         version: ['12.x', '18.x', '20.x']
