@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '@steroidsjs/nest-typeorm';
 import { Repository } from 'typeorm';
 
 import { Transactional } from '../../src';

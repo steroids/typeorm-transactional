@@ -1,4 +1,4 @@
-import { EntityManager } from 'typeorm';
+import { EntityManager } from '@steroidsjs/typeorm';
 import {
   DataSourceName,
   getDataSourceByName,

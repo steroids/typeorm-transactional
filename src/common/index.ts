@@ -1,4 +1,4 @@
-import { DataSource, EntityManager, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from '@steroidsjs/typeorm';
 import { EventEmitter } from 'events';
 
 import {
