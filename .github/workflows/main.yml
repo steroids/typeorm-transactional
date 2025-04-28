@@ -1,4 +1,4 @@
-name: main
+name: NPM Publish
 
 on:
   push:
@@ -7,39 +7,36 @@ on:
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
-    if: false
-    strategy:
-      matrix:
-        version: ['12.x', '18.x', '20.x']
-        storageDriver: ['ASYNC_LOCAL_STORAGE', 'CLS_HOOKED']
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.version }}
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Install
-        run: npm install
-
-      - name: Test
-        run: npm test
-        env:
-          TEST_STORAGE_DRIVER: ${{ matrix.storageDriver }}
-
+      runs-on: ubuntu-latest
+      if: false
+      strategy:
+        matrix:
+          version: ['12.x', '18.x', '20.x']
+          storageDriver: ['ASYNC_LOCAL_STORAGE', 'CLS_HOOKED']
+      steps:
+        - uses: actions/checkout@v4
+  
+        - uses: actions/setup-node@v3
+          with:
+            node-version: ${{ matrix.version }}
+            registry-url: 'https://registry.npmjs.org'
+  
+        - name: Install
+          run: npm install
+  
+        - name: Test
+          run: npm test
+          env:
+            TEST_STORAGE_DRIVER: ${{ matrix.storageDriver }}
+          
   publish:
-    if: startsWith(github.event.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v3
         with:
           node-version: '12.x'
           registry-url: 'https://registry.npmjs.org'
-
       - name: Install
         run: npm install
 
@@ -49,4 +46,4 @@ jobs:
       - name: Publish
         run: npm publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
