@@ -1,12 +1,12 @@
 {
-  "name": "wx-typeorm-transactional",
-  "version": "0.5.3",
+  "name": "@steroidsjs/typeorm-transactional",
+  "version": "0.5.4",
   "description": "A Transactional Method Decorator for typeorm that uses cls-hooked to handle and propagate transactions between different repositories and service methods. Inpired by Spring Trasnactional Annotation and Sequelize CLS",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/alexpryazhnikov/typeorm-transactional"
+    "url": "https://github.com/steroids/typeorm-transactional/"
   },
   "author": {
     "name": "Ohad David",
