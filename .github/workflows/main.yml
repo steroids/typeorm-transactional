@@ -15,20 +15,20 @@ jobs:
           storageDriver: ['ASYNC_LOCAL_STORAGE', 'CLS_HOOKED']
       steps:
         - uses: actions/checkout@v4
-  
+
         - uses: actions/setup-node@v3
           with:
             node-version: ${{ matrix.version }}
             registry-url: 'https://registry.npmjs.org'
-  
+
         - name: Install
           run: npm install
-  
+
         - name: Test
           run: npm test
           env:
             TEST_STORAGE_DRIVER: ${{ matrix.storageDriver }}
-          
+
   publish:
     runs-on: ubuntu-latest
     steps:
@@ -37,14 +37,14 @@ jobs:
         with:
           node-version: '12.x'
           registry-url: 'https://registry.npmjs.org'
-          
+
       - name: Install
         run: npm install
 
       - name: Build
         run: npm run build
-        
-      - uses: JS-DevTools/npm-publish@v1
-        with:
-          package: ./dist/package.json
-          token: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
