@@ -37,13 +37,9 @@ jobs:
         with:
           node-version: '12.x'
           registry-url: 'https://registry.npmjs.org'
-      - name: Install
-        run: npm install
-
-      - name: Build
-        run: npm run build
-
-      - name: Publish
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: yarn
+      - run: yarn build
+      - uses: JS-DevTools/npm-publish@v1
+        with:
+          package: ./dist/package.json
+          token: ${{ secrets.NPM_TOKEN }}
